@@ -130,9 +130,32 @@ app.post("/login", (request, response) => {
     });
 });
 
-app.post('/logout', (req, res) => {
+app.delete("/:paletteId/programs/:programId", (req, res, next) => {
+  const paletteId = req.params.paletteId;
+  const programId = req.params.programId;
+
+  if (!mongoose.Types.ObjectId.isValid(paletteId)) {
+    return res.status(400).json({ message: "Invalid palette ID format" });
+  }
+  if (!mongoose.Types.ObjectId.isValid(programId)) {
+    return res.status(400).json({ message: "Invalid program ID format" });
+  }
+
+  Palette.findByIdAndUpdate(paletteId, {
+    $pull: { tvPrograms: { _id: programId } },
+  })
+    .then(() => {
+      res.status(204).send();
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    });
+});
+
+app.post("/logout", (req, res) => {
   // clear the JWT token from the client-side
-  res.clearCookie('TOKEN');
+  res.clearCookie("TOKEN");
   // update the user's logged-out status
   res.json({ success: true });
 });
