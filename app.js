@@ -137,8 +137,12 @@ app.get("/free-endpoint", (request, response) => {
 
 // authentication endpoint
 app.get("/auth-endpoint", auth, (request, response) => {
-  console.log(request.user);
   response.send({ message: "You are authorized to access me" });
+});
+
+app.get("/fetch-palette", auth, async (req, res) => {
+  const palette = await Palette.findOne({ user: req.user.userId });
+  res.send(palette.tvPrograms);
 });
 
 app.post("/auth-endpoint-post", auth, async (request, response) => {
