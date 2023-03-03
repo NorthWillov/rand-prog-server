@@ -130,6 +130,13 @@ app.post("/login", (request, response) => {
     });
 });
 
+app.post('/logout', (req, res) => {
+  // clear the JWT token from the client-side
+  res.clearCookie('TOKEN');
+  // update the user's logged-out status
+  res.json({ success: true });
+});
+
 // free endpoint
 app.get("/free-endpoint", (request, response) => {
   response.json({ message: "You are free to access me anytime" });
