@@ -130,7 +130,7 @@ app.post("/login", (request, response) => {
     });
 });
 
-app.delete("/:paletteId/programs/:programId", (req, res, next) => {
+app.delete("/:paletteId/programs/:programId", auth, (req, res) => {
   const paletteId = req.params.paletteId;
   const programId = req.params.programId;
 
