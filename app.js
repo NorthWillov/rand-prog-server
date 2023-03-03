@@ -172,7 +172,7 @@ app.get("/auth-endpoint", auth, (request, response) => {
 
 app.get("/fetch-palette", auth, async (req, res) => {
   const palette = await Palette.findOne({ user: req.user.userId });
-  res.send(palette.tvPrograms);
+  res.send(palette);
 });
 
 app.post("/auth-endpoint-post", auth, async (request, response) => {
