@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 // require database connection
 const dbConnect = require("./db/dbConnect");
 const User = require("./db/userModel");
+const Palette = require("./db/paletteModel");
 const auth = require("./auth");
 
 // execute database connection
@@ -87,9 +88,8 @@ app.post("/login", (request, response) => {
 
         // if the passwords match
         .then((passwordCheck) => {
-
           // check if password matches
-          if(!passwordCheck) {
+          if (!passwordCheck) {
             return response.status(400).send({
               message: "Passwords does not match",
               error,
@@ -137,7 +137,54 @@ app.get("/free-endpoint", (request, response) => {
 
 // authentication endpoint
 app.get("/auth-endpoint", auth, (request, response) => {
+  console.log(request.user);
   response.send({ message: "You are authorized to access me" });
+});
+
+app.post("/auth-endpoint-post", auth, async (request, response) => {
+  console.log(request.user);
+
+  try {
+    const newPalette = {
+      user: request.user.userId,
+      tvPrograms: [
+        {
+          filename: "POR",
+          duration: { minutes: 2, seconds: 3 },
+          category: "promo",
+        },
+      ],
+    };
+    const palette = new Palette(newPalette);
+    await palette.save();
+    response.end();
+  } catch (err) {
+    console.log(err);
+  }
+
+  response.send({ message: "You are authorized to access me" });
+});
+
+app.put("/auth-endpoint-post", auth, async (req, res) => {
+  const palette = await Palette.findOne({ user: req.user.userId });
+
+  const newTvPrograms = [
+    {
+      filename: req.body.filename,
+      duration: req.body.duration,
+      category: req.body.category,
+    },
+    ...palette.tvPrograms,
+  ];
+
+  await Palette.findOneAndUpdate(
+    { user: req.user.userId },
+    {
+      tvPrograms: newTvPrograms,
+    }
+  );
+
+  res.send({ message: "You are authorized to access me" });
 });
 
 module.exports = app;
