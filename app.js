@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const cors = require('cors');
+const cors = require("cors");
 
 // require database connection
 const dbConnect = require("./db/dbConnect");
@@ -156,16 +156,65 @@ app.delete("/:paletteId/programs/:programId", auth, (req, res) => {
     });
 });
 
+app.post("/:paletteId/programs", auth, async (req, res) => {
+  const { paletteId } = req.params;
+  const { newProg } = req.body;
+  console.log(newProg);
+
+  try {
+    const updatedPalette = await Palette.findByIdAndUpdate(
+      paletteId,
+      {
+        $push: { tvPrograms: newProg },
+      },
+      { new: true }
+    );
+
+    if (!updatedPalette) {
+      return res.status(404).json({ error: "Palette not found" });
+    }
+
+    res.json(updatedPalette);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.put("/:paletteId/edit/:progId", auth, async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.paletteId)) {
+    return res.status(400).json({ message: "Invalid palette ID format" });
+  }
+  if (!mongoose.Types.ObjectId.isValid(req.params.progId)) {
+    return res.status(400).json({ message: "Invalid program ID format" });
+  }
+
+  const editProg = req.body.updProg;
+
+  try {
+    const updatedPalette = await Palette.updateOne(
+      { _id: req.params.paletteId, "tvPrograms._id": req.params.progId },
+      {
+        $set: {
+          "tvPrograms.$.filename": editProg.filename,
+          "tvPrograms.$.duration": editProg.duration,
+          "tvPrograms.$.category": editProg.category,
+        },
+      }
+    );
+
+    res.send(updatedPalette);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server Error");
+  }
+});
+
 app.post("/logout", (req, res) => {
   // clear the JWT token from the client-side
   res.clearCookie("TOKEN");
   // update the user's logged-out status
   res.json({ success: true });
-});
-
-// free endpoint
-app.get("/free-endpoint", (request, response) => {
-  response.json({ message: "You are free to access me anytime" });
 });
 
 // authentication endpoint
