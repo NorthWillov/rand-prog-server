@@ -39,43 +39,38 @@ app.get("/", (request, response, next) => {
   next();
 });
 
-// register endpoint
-app.post("/register", (request, response) => {
-  // hash the password
-  bcrypt
-    .hash(request.body.password, 10)
-    .then((hashedPassword) => {
-      // create a new user instance and collect the data
-      const user = new User({
-        email: request.body.email,
-        password: hashedPassword,
-      });
+app.post("/register", async (request, response) => {
+  try {
+    const hashedPassword = await bcrypt.hash(request.body.password, 10);
 
-      // save the new user
-      user
-        .save()
-        // return success if the new user is added to the database successfully
-        .then((result) => {
-          response.status(201).send({
-            message: "User Created Successfully",
-            result,
-          });
-        })
-        // catch erroe if the new user wasn't added successfully to the database
-        .catch((error) => {
-          response.status(500).send({
-            message: "Error creating user",
-            error,
-          });
-        });
-    })
-    // catch error if the password hash isn't successful
-    .catch((e) => {
-      response.status(500).send({
-        message: "Password was not hashed successfully",
-        e,
-      });
+    const user = new User({
+      email: request.body.email,
+      password: hashedPassword,
     });
+
+    const savedUser = await user.save();
+
+    const newPalette = {
+      user: savedUser._id,
+      tvPrograms: [],
+      categories: [],
+    };
+
+    const palette = new Palette(newPalette);
+
+    await palette.save();
+
+    response.status(201).send({
+      message: "User Created Successfully",
+      user: savedUser,
+    });
+  } catch (error) {
+    console.log(error);
+    response.status(500).send({
+      message: "Error creating user",
+      error,
+    });
+  }
 });
 
 // login endpoint
@@ -210,6 +205,29 @@ app.put("/:paletteId/edit/:progId", auth, async (req, res) => {
   }
 });
 
+app.post("/:paletteId/insert-new-category", auth, async (req, res) => {
+  const { paletteId } = req.params;
+
+  try {
+    const updatedPalette = await Palette.findByIdAndUpdate(
+      paletteId,
+      {
+        $push: { categories: req.body.newCategory },
+      },
+      { new: true }
+    );
+
+    if (!updatedPalette) {
+      return res.status(404).json({ error: "Palette not found" });
+    }
+
+    res.json(updatedPalette);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 app.post("/logout", (req, res) => {
   // clear the JWT token from the client-side
   res.clearCookie("TOKEN");
@@ -227,19 +245,17 @@ app.get("/fetch-palette", auth, async (req, res) => {
   res.send(palette);
 });
 
-app.post("/auth-endpoint-post", auth, async (request, response) => {
-  console.log(request.user);
+// app.get("/fetch-categories", auth, async (req, res) => {
+//   const categories = await Category.d({ user: req.user.userId });
+//   res.send(categories);
+// });
 
+app.post("/auth-endpoint-post", auth, async (request, response) => {
   try {
     const newPalette = {
       user: request.user.userId,
-      tvPrograms: [
-        {
-          filename: "POR",
-          duration: { minutes: 2, seconds: 3 },
-          category: "promo",
-        },
-      ],
+      tvPrograms: [],
+      categories: [],
     };
     const palette = new Palette(newPalette);
     await palette.save();

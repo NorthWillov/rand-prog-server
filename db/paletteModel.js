@@ -10,6 +10,16 @@ const paletteSchema = new Schema({
       category: String,
     },
   ],
+  categories: [
+    {
+      name: {
+        type: String,
+      },
+      color: {
+        type: String,
+      },
+    },
+  ],
 });
 
 const Palette = mongoose.model("Palette", paletteSchema);
