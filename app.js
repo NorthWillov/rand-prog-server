@@ -344,12 +344,12 @@ app.put("/auth-endpoint-post", auth, async (req, res) => {
   res.send({ message: "You are authorized to access me" });
 });
 
-app.use(express.static(path.join(__dirname, "client", "build")));
+app.use(express.static(path.join(__dirname, "build")));
 
 // Serve the index.html file for all non-static routes
 
 app.get("*", function (req, res) {
-  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
+  res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
 module.exports = app;
