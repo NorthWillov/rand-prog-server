@@ -284,6 +284,32 @@ app.post("/:paletteId/insert-new-category", auth, async (req, res) => {
   }
 });
 
+// add unused programs
+app.post("/:paletteId/add-unused-program", async (req, res) => {
+  try {
+    const paletteId = req.params.paletteId;
+    const { unusedProgName } = req.body;
+
+    // Find the palette by ID
+    const palette = await Palette.findById(paletteId);
+
+    if (!palette) {
+      return res.status(404).json({ error: "Palette not found" });
+    }
+
+    // Add the program names to the unusedProgs array
+    palette.unusedProgs.push(unusedProgName.toUpperCase().trim());
+
+    // Save the updated palette
+    await palette.save();
+
+    res.json({ message: "Unused programs added successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/logout", (req, res) => {
   // clear the JWT token from the client-side
   res.clearCookie("TOKEN");

@@ -24,6 +24,7 @@ const paletteSchema = new Schema({
       },
     },
   ],
+  unusedProgs: [String],
 });
 
 const Palette = mongoose.model("Palette", paletteSchema);
