@@ -193,13 +193,14 @@ app.delete(
 app.post("/:paletteId/programs", auth, async (req, res) => {
   const { paletteId } = req.params;
   const { newProg } = req.body;
-  console.log(newProg);
+
+  const newProgTrimmed = { ...newProg, filename: newProg.filename.trim() };
 
   try {
     const updatedPalette = await Palette.findByIdAndUpdate(
       paletteId,
       {
-        $push: { tvPrograms: newProg },
+        $push: { tvPrograms: newProgTrimmed },
       },
       { new: true }
     );
@@ -230,7 +231,7 @@ app.put("/:paletteId/edit/:progId", auth, async (req, res) => {
       { _id: req.params.paletteId, "tvPrograms._id": req.params.progId },
       {
         $set: {
-          "tvPrograms.$.filename": editProg.filename,
+          "tvPrograms.$.filename": editProg.filename.trim(),
           "tvPrograms.$.duration": editProg.duration,
           "tvPrograms.$.category": editProg.category,
           "tvPrograms.$.info": editProg.info,
