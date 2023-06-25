@@ -52,8 +52,15 @@ app.post("/register", async (request, response) => {
 
     const newPalette = {
       user: savedUser._id,
-      tvPrograms: [],
-      categories: [],
+      tvPrograms: [
+        {
+          filename: "test",
+          duration: { minutes: 20, seconds: 20 },
+          category: "wazne",
+          info: "To jest testowy plik, mozna go usunac",
+        },
+      ],
+      categories: [{ name: "wazne", color: "#000000" }],
     };
 
     const palette = new Palette(newPalette);
@@ -151,6 +158,42 @@ app.delete("/:paletteId/programs/:programId", auth, (req, res) => {
     });
 });
 
+app.delete(
+  "/:paletteId/delete-category/:categoryId",
+  auth,
+  async (req, res) => {
+    const { paletteId, categoryId } = req.params;
+
+    try {
+      const palette = await Palette.findById(paletteId);
+
+      if (!palette) {
+        return res.status(404).json({ error: "Palette not found" });
+      }
+
+      // Find the index of the category in the categories array
+      const categoryIndex = palette.categories.findIndex(
+        (category) => category._id.toString() === categoryId
+      );
+
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+
+      // Remove the category from the categories array
+      palette.categories.splice(categoryIndex, 1);
+
+      // Save the updated palette
+      const updatedPalette = await palette.save();
+
+      res.json(updatedPalette);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 app.post("/:paletteId/programs", auth, async (req, res) => {
   const { paletteId } = req.params;
   const { newProg } = req.body;
@@ -194,6 +237,7 @@ app.put("/:paletteId/edit/:progId", auth, async (req, res) => {
           "tvPrograms.$.filename": editProg.filename,
           "tvPrograms.$.duration": editProg.duration,
           "tvPrograms.$.category": editProg.category,
+          "tvPrograms.$.info": editProg.info,
         },
       }
     );
@@ -209,6 +253,21 @@ app.post("/:paletteId/insert-new-category", auth, async (req, res) => {
   const { paletteId } = req.params;
 
   try {
+    const palette = await Palette.findById(paletteId);
+
+    if (!palette) {
+      return res.status(404).json({ error: "Palette not found" });
+    }
+
+    // Check if the category name already exists
+    const existingCategory = palette.categories.find(
+      (category) => category.name === req.body.newCategory.name
+    );
+
+    if (existingCategory) {
+      return res.status(400).json({ error: "Category already exists" });
+    }
+
     const updatedPalette = await Palette.findByIdAndUpdate(
       paletteId,
       {

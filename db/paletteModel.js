@@ -8,6 +8,10 @@ const paletteSchema = new Schema({
       filename: String,
       duration: { minutes: Number, seconds: Number },
       category: String,
+      info: {
+        type: String,
+        required: false, // Making the "info" field optional
+      },
     },
   ],
   categories: [
