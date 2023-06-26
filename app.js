@@ -310,6 +310,43 @@ app.post("/:paletteId/add-unused-program", async (req, res) => {
   }
 });
 
+// delete unused program
+app.delete("/:paletteId/delete-unused-program", async (req, res) => {
+  try {
+    const paletteId = req.params.paletteId;
+    const { unusedProgName } = req.body;
+
+    console.log(unusedProgName);
+
+    // Find the palette by ID
+    const palette = await Palette.findById(paletteId);
+
+    if (!palette) {
+      return res.status(404).json({ error: "Palette not found" });
+    }
+
+    // Find the index of the unused program name in the unusedProgs array
+    const programIndex = palette.unusedProgs.findIndex(
+      (program) => program.toUpperCase() === unusedProgName.toUpperCase().trim()
+    );
+
+    if (programIndex === -1) {
+      return res.status(404).json({ error: "Unused program not found" });
+    }
+
+    // Remove the program name from the unusedProgs array
+    palette.unusedProgs.splice(programIndex, 1);
+
+    // Save the updated palette
+    await palette.save();
+
+    res.json({ message: "Unused program deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/logout", (req, res) => {
   // clear the JWT token from the client-side
   res.clearCookie("TOKEN");
