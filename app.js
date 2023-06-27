@@ -197,6 +197,25 @@ app.post("/:paletteId/programs", auth, async (req, res) => {
   const newProgTrimmed = { ...newProg, filename: newProg.filename.trim() };
 
   try {
+    const palette = await Palette.findById(paletteId);
+
+    if (!palette) {
+      return res.status(404).json({ error: "Palette not found" });
+    }
+
+    // Check if newProg.filename already exists in any tvProgram object
+    const isFilenameAlreadyUsed = palette.tvPrograms.some(
+      (program) =>
+        program.filename.trim().toUpperCase() ===
+        newProgTrimmed.filename.toUpperCase()
+    );
+
+    if (isFilenameAlreadyUsed) {
+      return res
+        .status(400)
+        .json({ error: "Program filename already exists in the palette" });
+    }
+
     const updatedPalette = await Palette.findByIdAndUpdate(
       paletteId,
       {
@@ -204,10 +223,6 @@ app.post("/:paletteId/programs", auth, async (req, res) => {
       },
       { new: true }
     );
-
-    if (!updatedPalette) {
-      return res.status(404).json({ error: "Palette not found" });
-    }
 
     res.json(updatedPalette);
   } catch (err) {
@@ -227,6 +242,26 @@ app.put("/:paletteId/edit/:progId", auth, async (req, res) => {
   const editProg = req.body.updProg;
 
   try {
+    const palette = await Palette.findById(req.params.paletteId);
+
+    if (!palette) {
+      return res.status(404).json({ message: "Palette not found" });
+    }
+
+    // Check if editProg.filename already exists in any other tvProgram object
+    const isFilenameAlreadyUsed = palette.tvPrograms.some(
+      (program) =>
+        program._id.toString() !== req.params.progId &&
+        program.filename.trim().toUpperCase() ===
+          editProg.filename.trim().toUpperCase()
+    );
+
+    if (isFilenameAlreadyUsed) {
+      return res.status(400).json({
+        message: "Program filename already exists in another tvProgram",
+      });
+    }
+
     const updatedPalette = await Palette.updateOne(
       { _id: req.params.paletteId, "tvPrograms._id": req.params.progId },
       {
@@ -258,7 +293,8 @@ app.post("/:paletteId/insert-new-category", auth, async (req, res) => {
 
     // Check if the category name already exists
     const existingCategory = palette.categories.find(
-      (category) => category.name === req.body.newCategory.name
+      (category) =>
+        category.name.toUpperCase() === req.body.newCategory.name.toUpperCase()
     );
 
     if (existingCategory) {
@@ -284,7 +320,6 @@ app.post("/:paletteId/insert-new-category", auth, async (req, res) => {
   }
 });
 
-// add unused programs
 app.post("/:paletteId/add-unused-program", async (req, res) => {
   try {
     const paletteId = req.params.paletteId;
@@ -295,6 +330,18 @@ app.post("/:paletteId/add-unused-program", async (req, res) => {
 
     if (!palette) {
       return res.status(404).json({ error: "Palette not found" });
+    }
+
+    // Check if unusedProgName already exists in the unusedProgs array
+    const isAlreadyUsed = palette.unusedProgs.some(
+      (prog) =>
+        prog.toUpperCase().trim() === unusedProgName.toUpperCase().trim()
+    );
+
+    if (isAlreadyUsed) {
+      return res.status(400).json({
+        error: "Program name already exists in the unused programs list",
+      });
     }
 
     // Add the program names to the unusedProgs array
